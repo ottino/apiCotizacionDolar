@@ -27,6 +27,7 @@ Sigue estos pasos para descargar, compilar y probar el proyecto:
 
 ```bash
 dotnet run
+```
 
 ### Probar
 La aplicación debería iniciar y mostrar la dirección local en la que está ejecutándose, por ejemplo: https://localhost:5001.
