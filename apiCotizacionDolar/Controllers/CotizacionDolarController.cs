@@ -10,34 +10,63 @@ namespace apiCotizacionDolar.Controllers
     [ApiController]
     public class CotizacionDolarController : ControllerBase
     {
+        private string url;
+
+        public CotizacionDolarController()
+        {
+            this.url = "https://www.infobae.com/economia/divisas/dolar-hoy/";
+        }
+
+        private string GetCleanDolarValue(string html)
+        {
+            Match match = Regex.Match(html, @"[\d,]+");
+            if (match.Success)
+            {
+                return match.Value.Replace(",", ".");
+            }
+            return null;
+        }
+
+        private string ExtractDolarValue(HtmlDocument doc, string xpath)
+        {
+            var node = doc.DocumentNode.SelectSingleNode(xpath);
+            if (node != null)
+            {
+                string innerHtml = node.InnerHtml;
+                return GetCleanDolarValue(innerHtml);
+            }
+            return null;
+        }
+
         [HttpGet("obtenerDolarBNA")]
         public ActionResult<object> ObtenerDolarBNA()
         {
-            string url = "https://www.infobae.com/economia/divisas/dolar-hoy/"; // Reemplazar con la URL real
             HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = web.Load(url);
+            HtmlDocument doc = web.Load(this.url);
 
-            var dolarNode = doc.DocumentNode.SelectSingleNode("//a[@class='exchange-dolar-title']/following-sibling::p[@class='exchange-dolar-amount']");
-            if (dolarNode != null)
-            {
-                string dolarValue = dolarNode.InnerHtml;
+            string dolarValue = ExtractDolarValue(doc, "//a[@class='exchange-dolar-title']/following-sibling::p[@class='exchange-dolar-amount']");
 
-                // Utilizar expresión regular para extraer el valor con decimales
-                Match match = Regex.Match(dolarValue, @"[\d,]+");
-                if (match.Success)
-                {
-                    string cleanDolarValue = match.Value.Replace(",", ".");
-                    return new { cotizacionBNA = cleanDolarValue };
-                }
-                else
-                {
-                    return NotFound();
-                }
-            }
-            else
+            if (dolarValue != null)
             {
-                return NotFound();
+                return new { cotizacionBNA = dolarValue };
             }
+            return NotFound("No se encontró la cotización del dólar");
+        }
+
+        [HttpGet("obtenerDolarLibre")]
+        public ActionResult<object> ObtenerDolarLibre()
+        {
+            HtmlWeb web = new HtmlWeb();
+            HtmlDocument doc = web.Load(this.url);
+
+            string dolarValue = ExtractDolarValue(doc, "//a[@aria-label='Dólar Libre']/following-sibling::p");
+
+            if (dolarValue != null)
+            {
+                return new { cotizacionDL = dolarValue };
+            }
+            return NotFound("No se encontró la cotización del Dólar Libre");
         }
     }
 }
+
